@@ -1,9 +1,15 @@
 package com.will.CycleTrack
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Looper
+import android.util.Log
 import android.widget.Button
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var goToMap: Button
