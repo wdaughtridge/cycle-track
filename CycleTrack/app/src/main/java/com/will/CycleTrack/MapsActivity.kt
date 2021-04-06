@@ -2,6 +2,9 @@ package com.will.CycleTrack
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.hardware.GeomagneticField
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
@@ -14,11 +17,11 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.Polyline
-import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.*
 import org.jetbrains.anko.doAsync
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -27,6 +30,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var polyLine: PolylineOptions
+
+    private var curLoc: LatLng? = null
+    private var distOfRoute: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,13 +51,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 locationResult ?: return
                 for (location in locationResult.locations){
                     val latLng = LatLng(location.latitude, location.longitude)
+
+                    if (curLoc != null) distOfRoute += computeDist(curLoc!!, latLng) else distOfRoute += computeDist(latLng, latLng)
+                    Log.d("distance", "$distOfRoute")
+
+                    curLoc = latLng
                     polyLine.add(latLng)
 
                     runOnUiThread {
-                        mMap.clear()
-                        mMap.addMarker(MarkerOptions().position(latLng).title("Current location"))
-                        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-                        mMap.addPolyline(polyLine)
+                        moveArrow(mMap, R.drawable.bicycle, 120, 120, latLng)
                     }
                 }
             }
@@ -60,13 +68,46 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         startLocationUpdates()
     }
 
+    // scale the nav icon, draw, and move camera
+    private fun moveArrow(mMap: GoogleMap, iconID: Int, width: Int, height: Int, latLng: LatLng) {
+        mMap.clear()
+
+        val scaledBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(resources, iconID), width, height, false)
+        mMap.addMarker(MarkerOptions().position(latLng).title("Current location").icon(BitmapDescriptorFactory.fromBitmap(scaledBitmap)).anchor(0.5f, 0.5f))
+
+        /*.rotation(
+            GeomagneticField(latLng.latitude.toFloat(), latLng.longitude.toFloat(), 100.0f, 500L).declination - 45.0f)
+        )*/
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
+        mMap.addPolyline(polyLine)
+    }
+
+    private fun computeDist(pt1: LatLng, pt2: LatLng): Double {
+        // citation: https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+        // had no idea how to do this without looking up formula
+        val deltaLatRad = (pt2.latitude - pt1.latitude) * (Math.PI/180.0)
+        val deltaLonRad = (pt2.longitude - pt1.longitude) * (Math.PI/180.0)
+        val a = sin(deltaLatRad/2.0) * sin(deltaLatRad/2.0) + cos(pt1.latitude * (Math.PI/180.0)) * cos(pt2.latitude * (Math.PI/180.0)) * sin(deltaLonRad/2.0) * sin(deltaLonRad/2.0)
+        val c = 2.0 * atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return 6371.0 * c
+    }
+
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        curLoc = null
+        distOfRoute = 0.0
 
-        // Add a marker in Sydney and move the camera
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    200);
+        }
+
+        val initLoc = LatLng(0.0, 0.0)
+        mMap.addMarker(MarkerOptions().position(initLoc).title("Marker at current location").icon(BitmapDescriptorFactory.fromResource(R.drawable.navigation)))
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(initLoc))
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f))
 
         mMap.setOnMapLongClickListener { coords: LatLng ->
             mMap.clear()
@@ -84,16 +125,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         }
-
-        val polyline1 = mMap.addPolyline(PolylineOptions()
-                .clickable(true)
-                .add(
-                        LatLng(-35.016, 143.321),
-                        LatLng(-34.747, 145.592),
-                        LatLng(-34.364, 147.891),
-                        LatLng(-33.501, 150.217),
-                        LatLng(-32.306, 149.248),
-                        LatLng(-32.491, 147.309)))
     }
 
     private fun startLocationUpdates() {
