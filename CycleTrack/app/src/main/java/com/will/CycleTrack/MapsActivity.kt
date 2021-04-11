@@ -4,12 +4,12 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.hardware.GeomagneticField
 import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.*
@@ -30,9 +30,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var polyLine: PolylineOptions
+    private lateinit var startRecording: Button
 
     private var curLoc: LatLng? = null
     private var distOfRoute: Double = 0.0
+    private var addToPolyline = false
+    private var routesThisSession = ArrayList<PolylineOptions>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +44,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        startRecording = findViewById(R.id.startRecording)
+        startRecording.setOnClickListener {
+            if (startRecording.text.toString() == "Start Recording") {
+                polyLine = PolylineOptions().clickable(true)
+                addToPolyline = true
+
+                startRecording.text = "Stop Recording"
+            } else {
+                routesThisSession.add(polyLine)
+                polyLine = PolylineOptions().clickable(true)
+                addToPolyline = false
+
+                startRecording.text = "Start Recording"
+            }
+        }
 
         polyLine = PolylineOptions().clickable(true)
 
@@ -80,7 +99,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         )*/
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
-        mMap.addPolyline(polyLine)
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f))
+
+        if (addToPolyline)
+            mMap.addPolyline(polyLine)
     }
 
     private fun computeDist(pt1: LatLng, pt2: LatLng): Double {
@@ -105,9 +127,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         val initLoc = LatLng(0.0, 0.0)
-        mMap.addMarker(MarkerOptions().position(initLoc).title("Marker at current location").icon(BitmapDescriptorFactory.fromResource(R.drawable.navigation)))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(initLoc))
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f))
+        moveArrow(mMap, R.drawable.bicycle, 120, 120, initLoc)
 
         mMap.setOnMapLongClickListener { coords: LatLng ->
             mMap.clear()
@@ -120,8 +140,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 } catch (e: Exception) { Log.e("MapsActivity", "Geocoder failed", e); listOf() } // trying to condense the length of this monster fn for time being
 
                 runOnUiThread {
-                    mMap.addMarker(MarkerOptions().position(coords).title(results.first().countryName))
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(coords))
+                    moveArrow(mMap, R.drawable.bicycle, 120, 120, coords)
                 }
             }
         }
@@ -135,12 +154,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         val locationRequest = LocationRequest.create()?.apply {
-            interval = 1000
-            fastestInterval = 500
+            interval = 500
+            fastestInterval = 250
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
-        fusedLocationClient.requestLocationUpdates(locationRequest,
+        fusedLocationClient.requestLocationUpdates(locationRequest!!,
                 locationCallback,
                 Looper.getMainLooper())
     }
