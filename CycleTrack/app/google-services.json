@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1090905969047",
+    "project_id": "muttclient",
+    "storage_bucket": "muttclient.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1090905969047:android:c530387c5da4a1f312b4d2",
+        "android_client_info": {
+          "package_name": "com.will.CycleTrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1090905969047-q88a83hlht4qdrt30t58gmpqr6bn262c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf9-bSZnlQUDFTLnaT5KdRf_SDzaW_TCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1090905969047-q88a83hlht4qdrt30t58gmpqr6bn262c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

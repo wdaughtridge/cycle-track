@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">CycleTrack</string>
     <string name="title_activity_maps">Map</string>
-    <string name="go_to_map">go to map</string>
+    <string name="go_to_map">login</string>
 </resources>
