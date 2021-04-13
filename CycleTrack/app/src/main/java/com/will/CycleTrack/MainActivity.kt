@@ -1,5 +1,6 @@
 package com.will.CycleTrack
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -33,6 +34,8 @@ class MainActivity : AppCompatActivity() {
         username = findViewById(R.id.username)
         password = findViewById(R.id.password)
 
+        val preferences = getSharedPreferences("cycleTrack", Context.MODE_PRIVATE)
+
         goToMap.setOnClickListener { v: View ->
             val user: String = username.text.toString()
             val pass: String = password.text.toString()
@@ -47,9 +50,9 @@ class MainActivity : AppCompatActivity() {
                         val currentUser = firebaseAuth.currentUser!!
                         val email = currentUser.email
 
-                        /*preferences.edit()
-                            .putString("username", inputtedUsername)
-                            .apply()*/
+                        preferences.edit()
+                            .putString("username", email)
+                            .apply()
 
                         Toast.makeText(this, "Logging in now..", Toast.LENGTH_LONG).show()
 

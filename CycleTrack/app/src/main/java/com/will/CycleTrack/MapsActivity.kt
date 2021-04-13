@@ -1,6 +1,7 @@
 package com.will.CycleTrack
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -18,7 +19,13 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import org.jetbrains.anko.doAsync
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.Locale.US
+import kotlin.collections.ArrayList
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -35,7 +42,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var curLoc: LatLng? = null
     private var distOfRoute: Double = 0.0
     private var addToPolyline = false
-    private var routesThisSession = ArrayList<PolylineOptions>()
+    private var curRoute = ArrayList<LatLng>()
+    private var fireStore = Firebase.firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,16 +56,35 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         startRecording = findViewById(R.id.startRecording)
         startRecording.setOnClickListener {
             if (startRecording.text.toString() == "Start Recording") {
+                curRoute = ArrayList()
+                distOfRoute = 0.0
                 polyLine = PolylineOptions().clickable(true)
                 addToPolyline = true
 
                 startRecording.text = "Stop Recording"
             } else {
-                routesThisSession.add(polyLine)
+                val listOfLatLngs = curRoute.toList()
                 polyLine = PolylineOptions().clickable(true)
                 addToPolyline = false
 
                 startRecording.text = "Start Recording"
+
+                val preferences = getSharedPreferences("cycleTrack", Context.MODE_PRIVATE)
+
+                doAsync {
+                    fireStore.collection("routes").add(
+                            hashMapOf(
+                                "user" to preferences.getString("username", "no_username"),
+                                "timestamp" to SimpleDateFormat("dd/M/yyyy hh:mm:ss", US).format(Date()), // random snippet for getting current date and time
+                                "points" to listOfLatLngs)
+                        )
+                        .addOnSuccessListener { documentReference ->
+                            Log.d("Firebase", "DocumentSnapshot added with ID: ${documentReference.id}")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.d("Firebase", "Error adding document", e)
+                        }
+                }
             }
         }
 
@@ -72,10 +99,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     val latLng = LatLng(location.latitude, location.longitude)
 
                     if (curLoc != null) distOfRoute += computeDist(curLoc!!, latLng) else distOfRoute += computeDist(latLng, latLng)
-                    Log.d("distance", "$distOfRoute")
 
                     curLoc = latLng
                     polyLine.add(latLng)
+                    curRoute.add(latLng)
 
                     runOnUiThread {
                         moveArrow(mMap, R.drawable.bicycle, 120, 120, latLng)
@@ -94,10 +121,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val scaledBitmap = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(resources, iconID), width, height, false)
         mMap.addMarker(MarkerOptions().position(latLng).title("Current location").icon(BitmapDescriptorFactory.fromBitmap(scaledBitmap)).anchor(0.5f, 0.5f))
 
-        /*.rotation(
-            GeomagneticField(latLng.latitude.toFloat(), latLng.longitude.toFloat(), 100.0f, 500L).declination - 45.0f)
-        )*/
-
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng))
         mMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f))
 
@@ -108,6 +131,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun computeDist(pt1: LatLng, pt2: LatLng): Double {
         // citation: https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
         // had no idea how to do this without looking up formula
+        // I still do not know if the distances I am getting are accurate
         val deltaLatRad = (pt2.latitude - pt1.latitude) * (Math.PI/180.0)
         val deltaLonRad = (pt2.longitude - pt1.longitude) * (Math.PI/180.0)
         val a = sin(deltaLatRad/2.0) * sin(deltaLatRad/2.0) + cos(pt1.latitude * (Math.PI/180.0)) * cos(pt2.latitude * (Math.PI/180.0)) * sin(deltaLonRad/2.0) * sin(deltaLonRad/2.0)
