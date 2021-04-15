@@ -2,6 +2,7 @@ package com.will.CycleTrack
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -13,6 +14,7 @@ import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -38,6 +40,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var polyLine: PolylineOptions
     private lateinit var startRecording: Button
+    private lateinit var viewProfile: Button
 
     private var curLoc: LatLng? = null
     private var distOfRoute: Double = 0.0
@@ -52,6 +55,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        viewProfile = findViewById(R.id.viewProfile)
+        viewProfile.setOnClickListener {
+            val intent = Intent(this, ProfileActivity::class.java)
+            startActivity(intent)
+        }
 
         startRecording = findViewById(R.id.startRecording)
         startRecording.setOnClickListener {
@@ -144,12 +153,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         curLoc = null
         distOfRoute = 0.0
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    200);
-        }
-
         val initLoc = LatLng(0.0, 0.0)
         moveArrow(mMap, R.drawable.bicycle, 120, 120, initLoc)
 
@@ -174,18 +177,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    200);
-        }
+                    200)
+        } else {
+            val locationRequest = LocationRequest.create().apply {
+                interval = 500
+                fastestInterval = 250
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
 
-        val locationRequest = LocationRequest.create()?.apply {
-            interval = 500
-            fastestInterval = 250
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            fusedLocationClient.requestLocationUpdates(locationRequest,
+                    locationCallback,
+                    Looper.getMainLooper())
         }
-
-        fusedLocationClient.requestLocationUpdates(locationRequest!!,
-                locationCallback,
-                Looper.getMainLooper())
     }
 
     override fun onResume() {
