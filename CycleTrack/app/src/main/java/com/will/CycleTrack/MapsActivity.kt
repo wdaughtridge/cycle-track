@@ -64,19 +64,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         startRecording = findViewById(R.id.startRecording)
         startRecording.setOnClickListener {
-            if (startRecording.text.toString() == "Start Recording") {
+            if (startRecording.text.toString() == resources.getString(R.string.start_recording)) {
                 curRoute = ArrayList()
                 distOfRoute = 0.0
                 polyLine = PolylineOptions().clickable(true)
                 addToPolyline = true
 
-                startRecording.text = "Stop Recording"
+                startRecording.text = resources.getString(R.string.stop_recording)
             } else {
                 val listOfLatLngs = curRoute.toList()
                 polyLine = PolylineOptions().clickable(true)
                 addToPolyline = false
 
-                startRecording.text = "Start Recording"
+                startRecording.text = resources.getString(R.string.start_recording)
 
                 val preferences = getSharedPreferences("cycleTrack", Context.MODE_PRIVATE)
 
@@ -84,7 +84,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     fireStore.collection("routes").add(
                             hashMapOf(
                                 "user" to preferences.getString("username", "no_username"),
-                                "timestamp" to SimpleDateFormat("dd/M/yyyy hh:mm:ss", US).format(Date()), // random snippet for getting current date and time
+                                "timestamp" to SimpleDateFormat("hh:mm:ss a MM/dd/yyyy", US).format(Date()),
+                                "period" to SimpleDateFormat("yyyyMMddHHmmss", ).format(Date()),
+                                "distance" to distOfRoute,
                                 "points" to listOfLatLngs)
                         )
                         .addOnSuccessListener { documentReference ->
@@ -99,6 +101,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         polyLine = PolylineOptions().clickable(true)
 
+        title = "CycleTrack"
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         locationCallback = object : LocationCallback() {
@@ -107,7 +111,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 for (location in locationResult.locations){
                     val latLng = LatLng(location.latitude, location.longitude)
 
-                    if (curLoc != null) distOfRoute += computeDist(curLoc!!, latLng) else distOfRoute += computeDist(latLng, latLng)
+                    distOfRoute += if (curLoc != null) computeDist(curLoc!!, latLng) else 0.0
 
                     curLoc = latLng
                     polyLine.add(latLng)
@@ -145,7 +149,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val deltaLonRad = (pt2.longitude - pt1.longitude) * (Math.PI/180.0)
         val a = sin(deltaLatRad/2.0) * sin(deltaLatRad/2.0) + cos(pt1.latitude * (Math.PI/180.0)) * cos(pt2.latitude * (Math.PI/180.0)) * sin(deltaLonRad/2.0) * sin(deltaLonRad/2.0)
         val c = 2.0 * atan2(Math.sqrt(a), Math.sqrt(1-a))
-        return 6371.0 * c
+        return 6371 * 1000 * c
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -162,7 +166,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             doAsync {
                 val geoCoder = Geocoder(this@MapsActivity)
 
-                val results: List<Address> = try {
+                try {
                     geoCoder.getFromLocation(coords.latitude, coords.longitude, 10)
                 } catch (e: Exception) { Log.e("MapsActivity", "Geocoder failed", e); listOf() } // trying to condense the length of this monster fn for time being
 

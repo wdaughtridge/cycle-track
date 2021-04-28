@@ -2,4 +2,21 @@
     <string name="app_name">CycleTrack</string>
     <string name="title_activity_maps">Map</string>
     <string name="go_to_map">login</string>
+    <string name="title_activity_route">Map</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="welcome_to_cycletrack">Welcome to CycleTrack</string>
+    <string name="register">Register</string>
+    <string name="remember_credentials">Remember credentials?</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="view_profile">View Profile</string>
+    <string name="user_example_com">user@example.com</string>
+    <string name="routes">Routes:</string>
+    <string name="create_account">Create Account</string>
+    <string name="enter_email">Enter email</string>
+    <string name="create_a_password">Create a password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="date_recorded">Date recorded:</string>
+    <string name="tap_to_view">Tap to view</string>
 </resources>

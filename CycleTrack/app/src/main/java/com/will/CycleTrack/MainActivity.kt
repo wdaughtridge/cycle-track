@@ -1,10 +1,13 @@
 package com.will.CycleTrack
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatEditText
@@ -19,6 +22,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var goToMap: Button
     private lateinit var username: AppCompatEditText
     private lateinit var password: AppCompatEditText
+    private lateinit var register: Button
+    private lateinit var rememberCreds: Switch
 
     private lateinit var firebaseAuth: FirebaseAuth
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -30,11 +35,25 @@ class MainActivity : AppCompatActivity() {
         firebaseAuth = FirebaseAuth.getInstance()
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
+        if (firebaseAuth.currentUser != null)
+            firebaseAuth.signOut()
+
         goToMap = findViewById(R.id.go_to_map)
         username = findViewById(R.id.username)
         password = findViewById(R.id.password)
+        register = findViewById(R.id.register)
+        rememberCreds = findViewById(R.id.rememberCreds)
 
         val preferences = getSharedPreferences("cycleTrack", Context.MODE_PRIVATE)
+
+        username.setText(preferences.getString("username", ""), TextView.BufferType.EDITABLE)
+        password.setText(preferences.getString("password", ""), TextView.BufferType.EDITABLE)
+        rememberCreds.isChecked = preferences.getString("rememberCreds", "") == "true"
+
+        register.setOnClickListener {
+            val intent = Intent(this, RegisterActivity::class.java)
+            startActivity(intent)
+        }
 
         goToMap.setOnClickListener { v: View ->
             val user: String = username.text.toString()
@@ -54,12 +73,30 @@ class MainActivity : AppCompatActivity() {
                             .putString("username", email)
                             .apply()
 
+                        if (rememberCreds.isChecked) {
+                            preferences.edit()
+                                .putString("password", password.text.toString())
+                                .apply()
+
+                            preferences.edit()
+                                .putString("rememberCreds", "true")
+                                .apply()
+                        } else {
+                            preferences.edit()
+                                .putString("password", "")
+                                .apply()
+
+                            preferences.edit()
+                                .putString("rememberCreds", "false")
+                                .apply()
+                        }
+
                         Toast.makeText(this, "Logging in now..", Toast.LENGTH_LONG).show()
 
                         val intent = Intent(this, MapsActivity::class.java)
+                        intent.putExtra("userEmail", email)
                         startActivity(intent)
                     } else {
-
                         val exception = task.exception
                         val bundle = Bundle()
                         if (exception is FirebaseAuthInvalidCredentialsException) {

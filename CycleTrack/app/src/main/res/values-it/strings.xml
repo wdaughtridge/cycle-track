@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">CycleTrack</string>
+    <string name="title_activity_maps">Carta geografica</string>
+    <string name="go_to_map">login</string>
+    <string name="title_activity_route">Carta geografica</string>
+    <string name="email">E-mail</string>
+    <string name="password">parola d\'ordine</string>
+    <string name="welcome_to_cycletrack">Benvenuti A CycleTrack</string>
+    <string name="register">Registrati</string>
+    <string name="remember_credentials">Ricorda le credenziali?</string>
+    <string name="start_recording">Inizia A Registrare</string>
+    <string name="stop_recording">Interrompi la registrazione</string>
+    <string name="view_profile">Vedi Profilo</string>
+    <string name="user_example_com">utente@esempio.it</string>
+    <string name="routes">Itinerari:</string>
+    <string name="create_account">Crea Un Account</string>
+    <string name="enter_email">Inserisci l\'email</string>
+    <string name="create_a_password">Crea una password</string>
+    <string name="confirm_password">Conferma password</string>
+    <string name="date_recorded">Data di registrazione:</string>
+    <string name="tap_to_view">Tocca per visualizzare</string>
+</resources>
